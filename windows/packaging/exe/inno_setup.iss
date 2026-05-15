@@ -1,6 +1,6 @@
 [Setup]
 AppId=B9F6E402-0CAE-4045-BDE6-14BD6C39C4EA
-AppVersion=1.12.5+30
+AppVersion=1.12.6+31
 AppName=Saya Music
 AppPublisher=shnwazdeveloper
 AppPublisherURL=https://github.com/shnwazdeveloper/sayamusicpc
@@ -9,7 +9,7 @@ AppUpdatesURL=https://github.com/shnwazdeveloper/sayamusicpc
 DefaultDirName={autopf}\sayamusic
 DisableProgramGroupPage=yes
 OutputDir=.
-OutputBaseFilename=sayamusic-1.12.5
+OutputBaseFilename=sayamusic-1.12.6
 Compression=lzma
 SolidCompression=yes
 SetupIconFile=..\..\windows\runner\resources\app_icon.ico
@@ -18,6 +18,10 @@ PrivilegesRequired=lowest
 LicenseFile=..\..\LICENSE
 ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
+CloseApplications=yes
+RestartApplications=no
+UninstallFilesDir={app}\_uninstall
+UninstallDisplayIcon={app}\sayamusic.exe
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
