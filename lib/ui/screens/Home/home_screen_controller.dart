@@ -60,26 +60,37 @@ class HomeScreenController extends GetxController {
   Future<bool> loadContentFromDb() async {
     final homeScreenData = await Hive.openBox("homeScreenData");
     if (homeScreenData.keys.isNotEmpty) {
-      final String quickPicksType = homeScreenData.get("quickPicksType");
-      final List quickPicksData = homeScreenData.get("quickPicks");
-      final List middleContentData = homeScreenData.get("middleContent") ?? [];
-      final List fixedContentData = homeScreenData.get("fixedContent") ?? [];
-      quickPicks.value = QuickPicks(
-          quickPicksData.map((e) => MediaItemBuilder.fromJson(e)).toList(),
-          title: quickPicksType);
-      middleContent.value = middleContentData
-          .map((e) => e["type"] == "Album Content"
-              ? AlbumContent.fromJson(e)
-              : PlaylistContent.fromJson(e))
-          .toList();
-      fixedContent.value = fixedContentData
-          .map((e) => e["type"] == "Album Content"
-              ? AlbumContent.fromJson(e)
-              : PlaylistContent.fromJson(e))
-          .toList();
-      isContentFetched.value = true;
-      printINFO("Loaded from offline db");
-      return true;
+      try {
+        final quickPicksType =
+            (homeScreenData.get("quickPicksType") ?? "Discover").toString();
+        final quickPicksData = homeScreenData.get("quickPicks");
+        final middleContentData = homeScreenData.get("middleContent") ?? [];
+        final fixedContentData = homeScreenData.get("fixedContent") ?? [];
+        if (quickPicksData is! List || quickPicksData.isEmpty) {
+          await homeScreenData.clear();
+          return false;
+        }
+        quickPicks.value = QuickPicks(
+            quickPicksData.map((e) => MediaItemBuilder.fromJson(e)).toList(),
+            title: quickPicksType);
+        middleContent.value = (middleContentData as List)
+            .map((e) => e["type"] == "Album Content"
+                ? AlbumContent.fromJson(e)
+                : PlaylistContent.fromJson(e))
+            .toList();
+        fixedContent.value = (fixedContentData as List)
+            .map((e) => e["type"] == "Album Content"
+                ? AlbumContent.fromJson(e)
+                : PlaylistContent.fromJson(e))
+            .toList();
+        isContentFetched.value = true;
+        printINFO("Loaded from offline db");
+        return true;
+      } catch (e) {
+        printERROR("Cached home screen data ignored due to $e");
+        await homeScreenData.clear();
+        return false;
+      }
     } else {
       return false;
     }
@@ -96,13 +107,13 @@ class HomeScreenController extends GetxController {
           limit:
               Get.find<SettingsScreenController>().noOfHomeScreenContent.value);
       if (contentType == "TR") {
-        final index = homeContentListMap
-            .indexWhere((element) => element['title'] == "Trending");
-        if (index != -1 && index != 0) {
-          quickPicks.value = QuickPicks(
-              List<MediaItem>.from(homeContentListMap[index]["contents"]),
-              title: "Trending");
-        } else if (index == -1) {
+        final con = takePlayableHomeSection(
+            homeContentListMap, const ["Trending"],
+            fallbackToFirstPlayable: false);
+        if (con != null) {
+          quickPicks.value = QuickPicks(List<MediaItem>.from(con["contents"]),
+              title: con["title"]);
+        } else {
           List charts = await _musicServices.getCharts(contentType);
           final index = charts.indexWhere((element) =>
               element['title'] ==
@@ -115,13 +126,13 @@ class HomeScreenController extends GetxController {
           }
         }
       } else if (contentType == "TMV") {
-        final index = homeContentListMap
-            .indexWhere((element) => element['title'] == "Top music videos");
-        if (index != -1 && index != 0) {
-          final con = homeContentListMap.removeAt(index);
+        final con = takePlayableHomeSection(
+            homeContentListMap, const ["Top music videos", "Top Music Videos"],
+            fallbackToFirstPlayable: false);
+        if (con != null) {
           quickPicks.value = QuickPicks(List<MediaItem>.from(con["contents"]),
               title: con["title"]);
-        } else if (index == -1) {
+        } else {
           List charts = await _musicServices.getCharts(contentType);
           final index = charts.indexWhere((element) =>
               element['title'] ==
@@ -151,11 +162,13 @@ class HomeScreenController extends GetxController {
       }
 
       if (quickPicks.value.songList.isEmpty) {
-        final index = homeContentListMap
-            .indexWhere((element) => element['title'] == "Quick picks");
-        final con = homeContentListMap.removeAt(index);
+        final con =
+            takePlayableHomeSection(homeContentListMap, const ["Quick picks"]);
+        if (con == null) {
+          throw NetworkError();
+        }
         quickPicks.value = QuickPicks(List<MediaItem>.from(con["contents"]),
-            title: "Quick picks");
+            title: con["title"] ?? "Quick picks");
       }
 
       middleContent.value = _setContentList(middleContentTemp);
@@ -172,6 +185,10 @@ class HomeScreenController extends GetxController {
       printERROR("Home Content not loaded due to ${r.message}");
       await Future.delayed(const Duration(seconds: 1));
       networkError.value = !silent;
+    } catch (e) {
+      printERROR("Home Content not loaded due to $e");
+      await Future.delayed(const Duration(seconds: 1));
+      networkError.value = !silent;
     }
   }
 
@@ -180,17 +197,19 @@ class HomeScreenController extends GetxController {
   ) {
     List contentTemp = [];
     for (var content in contents) {
-      if((content["contents"]).isEmpty) continue;
-      if ((content["contents"][0]).runtimeType == Playlist) {
+      if (content is! Map) continue;
+      final items = content["contents"];
+      if (items is! List || items.isEmpty) continue;
+      if (items[0].runtimeType == Playlist) {
         final tmp = PlaylistContent(
-            playlistList: (content["contents"]).whereType<Playlist>().toList(),
+            playlistList: items.whereType<Playlist>().toList(),
             title: content["title"]);
         if (tmp.playlistList.length >= 2) {
           contentTemp.add(tmp);
         }
-      } else if ((content["contents"][0]).runtimeType == Album) {
+      } else if (items[0].runtimeType == Album) {
         final tmp = AlbumContent(
-            albumList: (content["contents"]).whereType<Album>().toList(),
+            albumList: items.whereType<Album>().toList(),
             title: content["title"]);
         if (tmp.albumList.length >= 2) {
           contentTemp.add(tmp);
@@ -374,3 +393,39 @@ class HomeScreenController extends GetxController {
     super.dispose();
   }
 }
+
+@visibleForTesting
+Map<dynamic, dynamic>? takePlayableHomeSection(
+  List<dynamic> sections,
+  Iterable<String> preferredTitles, {
+  bool fallbackToFirstPlayable = true,
+}) {
+  final normalizedPreferredTitles =
+      preferredTitles.map(_normalizeHomeSectionTitle).toSet();
+  int? fallbackIndex;
+
+  for (var index = 0; index < sections.length; index++) {
+    final section = sections[index];
+    if (section is! Map) continue;
+
+    final contents = section["contents"];
+    if (contents is! List || contents.whereType<MediaItem>().isEmpty) {
+      continue;
+    }
+
+    fallbackIndex ??= index;
+    if (normalizedPreferredTitles
+        .contains(_normalizeHomeSectionTitle(section["title"]))) {
+      return Map<dynamic, dynamic>.from(sections.removeAt(index));
+    }
+  }
+
+  if (fallbackToFirstPlayable && fallbackIndex != null) {
+    return Map<dynamic, dynamic>.from(sections.removeAt(fallbackIndex));
+  }
+
+  return null;
+}
+
+String _normalizeHomeSectionTitle(dynamic title) =>
+    title?.toString().trim().toLowerCase() ?? "";
