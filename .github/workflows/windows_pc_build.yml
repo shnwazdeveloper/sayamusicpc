@@ -1,0 +1,54 @@
+name: Build PC Windows app
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-windows-pc:
+    name: Build Windows PC package
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.24.2
+          cache: true
+
+      - name: Prepare Flutter project
+        shell: pwsh
+        run: |
+          flutter pub get
+          dart localization/generator.dart
+          [System.IO.File]::WriteAllText("lib/utils/update_check_flag_file.dart", "const updateCheckFlag = true;`n", [System.Text.UTF8Encoding]::new($false))
+
+      - name: Build Windows release
+        run: flutter build windows --release
+
+      - name: Create portable ZIP
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Compress-Archive -Path "build/windows/x64/runner/Release/*" -DestinationPath "dist/Saya-Music-windows-portable.zip" -Force
+
+      - name: Build unsigned installer
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          dart pub global activate flutter_distributor
+          $env:PATH += ";$env:LOCALAPPDATA\Pub\Cache\bin"
+          flutter_distributor package --platform windows --targets exe
+
+      - name: Upload Windows PC artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Saya-Music-Windows-PC
+          path: |
+            dist/**/*.zip
+            dist/**/*.exe
+          if-no-files-found: error

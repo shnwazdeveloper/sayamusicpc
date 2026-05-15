@@ -1,12 +1,12 @@
 <div align="center">
 
-# ❗**This repository is no longer maintained.**
+# â—**This repository is no longer maintained.**
 
 </div>
 
-<img src="https://github.com/anandnet/Harmony-Music/blob/main/cover.png" width="1200" >
+<img src="https://github.com/shnwazdeveloper/sayamusicpc/blob/main/cover.png" width="1200" >
 
-# Harmony Music
+# Saya Music
 A cross platform app for music streaming made with Flutter(Android, Windows, linux).
 
 # Features
@@ -35,7 +35,19 @@ A cross platform app for music streaming made with Flutter(Android, Windows, lin
 # Download
 * Pleass choose one source for android apk. you won't be able to update from cross build apk source.
 
-<a href="https://github.com/anandnet/Harmony-Music/releases/latest"><img src ="https://github.com/anandnet/Harmony-Music/blob/main/don_github.png" width = "250"></a> <a href= "https://f-droid.org/packages/com.anandnet.harmonymusic"><img src = "https://github.com/anandnet/Harmony-Music/blob/main/down_fdroid.png" width = '250'></a></a> 
+<a href="https://github.com/shnwazdeveloper/sayamusicpc/releases/latest"><img src ="https://github.com/shnwazdeveloper/sayamusicpc/blob/main/don_github.png" width = "250"></a> <a href= "https://f-droid.org/packages/com.anandnet.harmonymusic"><img src = "https://github.com/shnwazdeveloper/sayamusicpc/blob/main/down_fdroid.png" width = '250'></a></a>
+
+# PC / Windows build
+This repo already contains a Windows desktop target. To build the PC app from your fork without installing Visual Studio locally, run the `Build PC Windows app` workflow in GitHub Actions and download the `Saya-Music-Windows-PC` artifact. It contains a portable Windows ZIP and, when installer packaging succeeds, an unsigned `.exe` installer.
+
+For a local Windows build, install Visual Studio 2022 Build Tools with the `Desktop development with C++` workload and enable Windows Developer Mode for Flutter plugin symlinks. Then run:
+
+```powershell
+git submodule update --init .flutter
+.\scripts\build_windows_pc.ps1
+```
+
+The portable PC build is written to `dist\Saya-Music-windows-portable.zip`.
 
 # Translation
 <a href="https://hosted.weblate.org/engage/harmony-music/">
@@ -49,7 +61,7 @@ You can also help us in translation, click status image or <a href="https://host
 
 # License
 ```
-Harmony Music is a free software licensed under GPL v3.0 with following condition.
+Saya Music is a free software licensed under GPL v3.0 with following condition.
 
 - Copied/Modified version of this software can not be used for 'non-free' and profit purposes.
 - You can not publish copied/modified version of this app on closed source app repository
@@ -63,7 +75,7 @@ Harmony Music is a free software licensed under GPL v3.0 with following conditio
 This project has been created while learning & learning is the main intention.
 This project is not sponsored or affiliated with, funded, authorized, endorsed by any content provider.
 Any Song, content, trademark used in this app are intellectual property of their respective owners.
-Harmony music is not responsible for any infringement of copyright or other intellectual property rights that may result
+Saya Music is not responsible for any infringement of copyright or other intellectual property rights that may result
 from the use of the songs and other content available through this app.
 
 This Software is released "as-is", without any warranty, responsibility or liability.
