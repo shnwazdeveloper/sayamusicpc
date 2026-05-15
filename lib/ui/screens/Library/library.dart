@@ -220,7 +220,9 @@ class PlaylistNAlbumLibraryWidget extends StatelessWidget {
                     })
                   : Center(
                       child: Text(
-                      "noBookmarks".tr,
+                      isAlbumContent
+                          ? "No albums in your library."
+                          : "No playlists in your library.",
                       style: Theme.of(context).textTheme.titleMedium,
                     )),
             ),
@@ -276,7 +278,7 @@ class LibraryArtistWidget extends StatelessWidget {
               : Expanded(
                   child: Center(
                       child: Text(
-                  "noBookmarks".tr,
+                  "No artists in your library.",
                   style: Theme.of(context).textTheme.titleMedium,
                 ))))
         ],

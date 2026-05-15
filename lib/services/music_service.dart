@@ -7,6 +7,8 @@ import 'package:get/get.dart' as getx;
 import 'package:hive/hive.dart';
 
 import '/models/album.dart';
+import '/models/artist.dart';
+import '/models/playlist.dart';
 import '/services/utils.dart';
 import '../utils/helper.dart';
 import 'constant.dart';
@@ -654,7 +656,7 @@ class MusicServices extends getx.GetxService {
 
     results = nav(results, ['sectionListRenderer', 'contents']);
 
-    if (results.length == 1 && results[0]['itemSectionRenderer'] != null) {
+    if (results == null) {
       return searchResults;
     }
 
@@ -664,42 +666,44 @@ class MusicServices extends getx.GetxService {
       String category;
       if (res['musicShelfRenderer'] != null) {
         dynamic itemResults = res['musicShelfRenderer']['contents'];
-        String? typeFilter = filter;
+        type = _searchResultTypeFromFilter(filter) ?? type;
         category = "mixed"; // Just a default value
-        final mixedItems = parseSearchResults(itemResults,
-            ['artist', 'playlist', 'song', 'video', 'station'], type, category);
+        final mixedItems = _parseSearchListItems(itemResults, type, category);
         if (filter == null) {
           for (var item in mixedItems) {
-            final itemType = item.runtimeType == MediaItem
-                ? (item.artist.split(",")[0]) + "s"
-                : "${item.runtimeType}s";
-            if (searchResults.containsKey(itemType) &&
-                (searchResults[itemType]).length < 3) {
-              (searchResults[itemType] as List).add(item);
-            } else if (!searchResults.containsKey(itemType)) {
-              searchResults[itemType] = [item];
-            }
+            _addMixedSearchItem(searchResults, item);
           }
         } else {
-          category = nav(res, ['musicShelfRenderer', ...title_text]);
-          searchResults[category] = parseSearchResults(
-              res['musicShelfRenderer']['contents'],
-              ['artist', 'playlist', 'song', 'video', 'station'],
-              type,
-              category);
+          category = nav(res, ['musicShelfRenderer', ...title_text]) ??
+              _searchCategoryFromFilter(filter);
+          searchResults[category] =
+              _parseSearchListItems(itemResults, type, category);
         }
-        type = typeFilter?.substring(0, typeFilter.length - 1).toLowerCase();
+      } else if (res['itemSectionRenderer'] != null) {
+        final itemResults = nav(res, ['itemSectionRenderer', 'contents']);
+        type = _searchResultTypeFromFilter(filter) ?? type;
+        category = filter == null ? "mixed" : _searchCategoryFromFilter(filter);
+        final mixedItems = _parseSearchListItems(itemResults, type, category);
+        if (filter == null) {
+          for (var item in mixedItems) {
+            _addMixedSearchItem(searchResults, item);
+          }
+        } else {
+          searchResults[category] = [
+            ...(searchResults[category] ?? []),
+            ...mixedItems,
+          ];
+        }
       } else {
         continue;
       }
 
-      if (filter != null) {
+      if (filter != null && res['musicShelfRenderer'] != null) {
         requestFunc(additionalParams) async =>
             (await _sendRequest("search", data,
                     additionalParams: additionalParams))
                 .data;
-        parseFunc(contents) => parseSearchResults(contents,
-            ['artist', 'playlist', 'song', 'video', 'station'], type, category);
+        parseFunc(contents) => _parseSearchListItems(contents, type, category);
 
         if (searchResults.containsKey(category)) {
           final x = await getContinuations(
@@ -725,7 +729,128 @@ class MusicServices extends getx.GetxService {
       }
     }
 
+    if (filter != null && !searchResults.containsKey("params")) {
+      final category = _searchCategoryFromFilter(filter);
+      searchResults[category] = searchResults[category] ?? [];
+      searchResults["params"] = {
+        'data': data,
+        "type": type,
+        "category": category,
+        'additionalParams': '&ctoken=null&continuation=null',
+      };
+    }
+
     return searchResults;
+  }
+
+  static const List<String> _searchResultTypes = [
+    'artist',
+    'playlist',
+    'song',
+    'video',
+    'station'
+  ];
+
+  List<dynamic> _parseSearchListItems(
+      List<dynamic>? contents, String? resultType, String category) {
+    if (contents == null) {
+      return [];
+    }
+
+    final responsiveItems = contents
+        .where((item) =>
+            item is Map && item['musicResponsiveListItemRenderer'] != null)
+        .toList();
+
+    return parseSearchResults(
+            responsiveItems, _searchResultTypes, resultType, category)
+        .where((item) => item != null && (item is! Map || item.isNotEmpty))
+        .toList();
+  }
+
+  String _searchCategoryFromFilter(String filter) {
+    switch (filter) {
+      case 'songs':
+        return 'Songs';
+      case 'videos':
+        return 'Videos';
+      case 'albums':
+        return 'Albums';
+      case 'artists':
+        return 'Artists';
+      case 'community_playlists':
+        return 'Community playlists';
+      case 'featured_playlists':
+        return 'Featured playlists';
+      case 'playlists':
+        return 'Playlists';
+      default:
+        return filter
+            .split('_')
+            .map((part) => part.isEmpty
+                ? part
+                : '${part[0].toUpperCase()}${part.substring(1)}')
+            .join(' ');
+    }
+  }
+
+  String? _searchResultTypeFromFilter(String? filter) {
+    if (filter == null) {
+      return null;
+    }
+    if (filter.contains('playlists')) {
+      return 'playlist';
+    }
+    if (filter.endsWith('s')) {
+      return filter.substring(0, filter.length - 1);
+    }
+    return filter;
+  }
+
+  void _addMixedSearchItem(Map<String, dynamic> searchResults, dynamic item) {
+    final itemType = _mixedSearchItemType(item);
+    if (itemType == null) {
+      return;
+    }
+
+    if (searchResults.containsKey(itemType)) {
+      if ((searchResults[itemType] as List).length < 3) {
+        (searchResults[itemType] as List).add(item);
+      }
+    } else {
+      searchResults[itemType] = [item];
+    }
+  }
+
+  String? _mixedSearchItemType(dynamic item) {
+    if (item is MediaItem) {
+      final resultType = item.extras?['resultType']?.toString().toLowerCase();
+      if (resultType == 'song') {
+        return 'Songs';
+      }
+      if (resultType == 'video') {
+        return 'Videos';
+      }
+
+      final type = item.artist?.split(',').first.trim().toLowerCase();
+      if (type == 'song') {
+        return 'Songs';
+      }
+      if (type == 'video') {
+        return 'Videos';
+      }
+      return null;
+    }
+    if (item is Album) {
+      return 'Albums';
+    }
+    if (item is Artist) {
+      return 'Artists';
+    }
+    if (item is Playlist) {
+      return 'Playlists';
+    }
+    return null;
   }
 
   Future<Map<String, dynamic>> getSearchContinuation(Map additionalParamsNext,
@@ -739,8 +864,7 @@ class MusicServices extends getx.GetxService {
         (await _sendRequest("search", data, additionalParams: additionalParams))
             .data;
 
-    parseFunc(contents) => parseSearchResults(contents,
-        ['artist', 'playlist', 'song', 'video', 'station'], type, category);
+    parseFunc(contents) => _parseSearchListItems(contents, type, category);
 
     final x = await getContinuations(
         {}, 'musicShelfContinuation', limit, requestFunc, parseFunc,
