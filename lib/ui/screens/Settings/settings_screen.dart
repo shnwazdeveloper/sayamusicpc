@@ -679,14 +679,14 @@ class SettingsScreen extends StatelessWidget {
                     contentPadding: const EdgeInsets.only(left: 5, right: 10),
                     title: const Text("Developer"),
                     subtitle: Text(
-                      "shnwazdeveloper\nhttps://github.com/shnwazdeveloper",
+                      "ㅤ- 𝐒𝚮𝚴𝐖𝚨𝚭‎ㅤ\nhttps://t.me/sexyafraid",
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     isThreeLine: true,
                     onTap: () {
                       launchUrl(
                         Uri.parse(
-                          'https://github.com/shnwazdeveloper',
+                          'https://t.me/sexyafraid',
                         ),
                         mode: LaunchMode.externalApplication,
                       );

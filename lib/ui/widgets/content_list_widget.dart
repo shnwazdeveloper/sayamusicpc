@@ -53,28 +53,28 @@ class ContentListWidget extends StatelessWidget {
           SizedBox(
             height: 200,
             //color: Colors.blueAccent,
-            child: Scrollbar(
-              thickness: GetPlatform.isDesktop ? null : 0,
-              controller: scrollController,
+            child: ScrollConfiguration(
+              behavior:
+                  ScrollConfiguration.of(context).copyWith(scrollbars: false),
               child: ListView.separated(
-                  controller: scrollController,
-                  addAutomaticKeepAlives: false, //Testing going
-                  addRepaintBoundaries: false, //on this
-                  physics: const BouncingScrollPhysics(),
-                  separatorBuilder: (context, index) => const SizedBox(
-                        width: 15,
-                      ),
-                  scrollDirection: Axis.horizontal,
-                  itemCount: isAlbumContent
-                      ? content.albumList.length
-                      : content.playlistList.length,
-                  itemBuilder: (_, index) {
-                    if (isAlbumContent) {
-                      return ContentListItem(content: content.albumList[index]);
-                    }
-                    return ContentListItem(
-                        content: content.playlistList[index]);
-                  }),
+                controller: scrollController,
+                addAutomaticKeepAlives: false, //Testing going
+                addRepaintBoundaries: false, //on this
+                physics: const BouncingScrollPhysics(),
+                separatorBuilder: (context, index) => const SizedBox(
+                  width: 15,
+                ),
+                scrollDirection: Axis.horizontal,
+                itemCount: isAlbumContent
+                    ? content.albumList.length
+                    : content.playlistList.length,
+                itemBuilder: (_, index) {
+                  if (isAlbumContent) {
+                    return ContentListItem(content: content.albumList[index]);
+                  }
+                  return ContentListItem(content: content.playlistList[index]);
+                },
+              ),
             ),
           ),
         ],

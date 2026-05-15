@@ -1,6 +1,6 @@
 [Setup]
 AppId=B9F6E402-0CAE-4045-BDE6-14BD6C39C4EA
-AppVersion=1.12.6+31
+AppVersion=1.12.7+32
 AppName=Saya Music
 AppPublisher=shnwazdeveloper
 AppPublisherURL=https://github.com/shnwazdeveloper/sayamusicpc
@@ -9,7 +9,7 @@ AppUpdatesURL=https://github.com/shnwazdeveloper/sayamusicpc
 DefaultDirName={autopf}\sayamusic
 DisableProgramGroupPage=yes
 OutputDir=.
-OutputBaseFilename=sayamusic-1.12.6
+OutputBaseFilename=sayamusic-1.12.7
 Compression=lzma
 SolidCompression=yes
 SetupIconFile=..\..\windows\runner\resources\app_icon.ico
