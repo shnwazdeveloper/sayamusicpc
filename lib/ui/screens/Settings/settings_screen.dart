@@ -675,6 +675,23 @@ class SettingsScreen extends StatelessWidget {
                       );
                     },
                   ),
+                  ListTile(
+                    contentPadding: const EdgeInsets.only(left: 5, right: 10),
+                    title: const Text("Developer"),
+                    subtitle: Text(
+                      "shnwazdeveloper\nhttps://github.com/shnwazdeveloper",
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    isThreeLine: true,
+                    onTap: () {
+                      launchUrl(
+                        Uri.parse(
+                          'https://github.com/shnwazdeveloper',
+                        ),
+                        mode: LaunchMode.externalApplication,
+                      );
+                    },
+                  ),
                   const Divider(),
                   SizedBox(
                     child: Column(
